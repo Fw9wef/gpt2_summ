@@ -46,9 +46,17 @@ class GPT21024Dataset(Dataset):
         file_name = os.path.join(self.root_dir,str(idx))
         with open(file_name,'r') as f:
               data = json.load(f)
-        text = self.tokenizer.encode(self.tokenizer.pad_token)*1024
-        content = data['article'] + self.tokenizer.encode(self.tokenizer.sep_token) + data['abstract']
-        text[:len(content)] = content
-        text = torch.tensor(text)
-        sample = {'article': text, 'sum_idx': len(data['article'])}
+
+        article = self.tokenizer.encode(self.tokenizer.pad_token) * 768
+        content = data['article'][:767] + self.tokenizer.encode(self.tokenizer.sep_token)
+        article[len(article) - len(content):] = content
+        article = torch.tensor(article)
+
+        summary = self.tokenizer.encode(self.tokenizer.pad_token) * 256
+        content = data['abstract'][:256]
+        summary[:len(content)] = content
+        summary = torch.tensor(summary)
+        ##
+        text = torch.cat([article, summary])
+        sample = {'article': text, 'sum_idx': 767}
         return sample
