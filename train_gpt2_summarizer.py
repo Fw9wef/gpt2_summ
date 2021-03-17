@@ -18,6 +18,11 @@ from tqdm import tnrange, tqdm
 from dataset import GPT21024Dataset 
 from utils import add_special_tokens, beam_search, generate_beam_sample, generate_sample, sample_seq, set_seed, top_k_top_p_filtering
 
+#from trl.gpt2 import GPT2HeadWithValueModel, respond_to_batch
+#from trl.ppo import PPOTrainer
+#from bleurt import score
+
+bleurt_checkpoint = "../bleurt/bleurt/test_checkpoint"
 
 
 def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
@@ -78,7 +83,6 @@ def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
                     writer.add_scalar('eval_{}'.format(key), value, global_step)
                 print('After', global_step+1,'updates: ', end='\n\n')
                 generate_sample(valid_dataset, tokenizer, num=2, eval_step=True,device=args.device)
-                    
      
 
 def evaluate(args, model, eval_dataset, ignore_index, global_step=None):
@@ -140,7 +144,7 @@ def main():
     parser.add_argument("--gradient_accumulation_steps",default=32, type=int, required=True, help="gradient_accumulation_steps")
     parser.add_argument("--batch_size",default=1, type=int, required=True, help="batch_size")
     parser.add_argument("--num_workers",default=4, type=int, required=False, help="num of cpus available")
-    parser.add_argument("--device",default=torch.device('cpu'), required=False, help="torch.device object")
+    parser.add_argument("--device",default=0, required=False, help="torch.device object")
     parser.add_argument("--num_train_epochs",default=1, type=int, required=True, help="no of epochs of training")
     parser.add_argument("--output_dir",default='./output', type=str, required=True, help="path to save evaluation results")
     parser.add_argument("--model_dir",default='./weights', type=str, required=True, help="path to save trained model")
@@ -149,14 +153,21 @@ def main():
     parser.add_argument("--max_grad_norm",default=1.0, type=float, help="max gradient norm.")
     parser.add_argument("--root_dir",default='./CNN/gpt2_1024_data', type=str, help="location of json dataset.")
     parser.add_argument("--ids_file",default='./CNN/ids.json', type=str, help="location of train, valid and test file indexes")
+    #arser.add_argument("--rl_mode", action='store_true', help="if specified? trains model with reinforcement learning approach")
     args = parser.parse_args()
 
     train_data = GPT21024Dataset(args.root_dir,args.ids_file,mode='train',length=3000) #training on only 3000 datasets
     valid_data = GPT21024Dataset(args.root_dir,args.ids_file,mode='valid',length=500)  #validation on only 500 datasets
     tokenizer = add_special_tokens()
     ignore_idx = tokenizer.pad_token_id
+
+
     model = GPT2LMHeadModel.from_pretrained('gpt2')
     model.resize_token_embeddings(len(tokenizer))
+
+    args.device = torch.device('cuda:0')
+    if args.device == -1:
+        model = torch.nn.DataParallel(model)
     model.to(args.device)
 
     start = time.time()
@@ -168,6 +179,14 @@ def main():
     config_file = os.path.join(args['model_dir'], 'config_{}_data{}_trained_after_{}_epochs_only_sum_loss_ignr_pad.json'.format(args['fp16_opt_level'],3000,args['num_train_epochs']))
     torch.save(model.state_dict(), model_file)
     model.config.to_json_file(config_file)
+
+
+    #scorer = score.BleurtScorer(bleurt_checkpoint)
+
+    #gpt2_model = GPT2HeadWithValueModel.from_pretrained('weights/')
+    #gpt2_model_ref = GPT2HeadWithValueModel.from_pretrained()
+    #gpt2_tokenizer = GPT2Tokenizer.from_pretrained()
+
 
 
 if __name__ == '__main__':
