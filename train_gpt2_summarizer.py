@@ -19,8 +19,6 @@ from dataset import GPT21024Dataset
 from utils import add_special_tokens, beam_search, generate_beam_sample, generate_sample, sample_seq, set_seed, \
     top_k_top_p_filtering
 
-bleurt_checkpoint = "../bleurt/bleurt/test_checkpoint"
-
 
 def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
     """ Trains GPT2 model and logs necessary details.
