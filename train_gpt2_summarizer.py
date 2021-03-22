@@ -61,7 +61,7 @@ def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
                 shift_logits = logs[..., idx:-1, :].contiguous()
                 shift_labels = labs[..., idx + 1:].contiguous()
                 loss += loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
-            loss = loss / args.gradient_accumulation_steps
+            loss = loss / args.gradient_accumulation_steps / index.shape[0]
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
             tr_loss += loss.item()
