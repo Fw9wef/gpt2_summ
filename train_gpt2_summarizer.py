@@ -7,7 +7,7 @@ import random
 import time
 
 import numpy as np
-from transformers import ConstantLRSchedule, GPT2Config, GPT2LMHeadModel, AdamW, GPT2Tokenizer, WarmupLinearSchedule
+from transformers import GPT2Config, GPT2LMHeadModel, AdamW, GPT2Tokenizer, get_linear_schedule_with_warmup
 from tensorboardX import SummaryWriter
 import torch
 from torch.nn import CrossEntropyLoss
@@ -18,10 +18,6 @@ from tqdm import tnrange, tqdm
 from dataset import GPT21024Dataset
 from utils import add_special_tokens, beam_search, generate_beam_sample, generate_sample, sample_seq, set_seed, \
     top_k_top_p_filtering
-
-# from trl.gpt2 import GPT2HeadWithValueModel, respond_to_batch
-# from trl.ppo import PPOTrainer
-# from bleurt import score
 
 bleurt_checkpoint = "../bleurt/bleurt/test_checkpoint"
 
@@ -41,7 +37,7 @@ def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
                           num_workers=args.num_workers)
     loss_fct = CrossEntropyLoss(ignore_index=ignore_index)  # ignores padding token for loss calculation
     optimizer = AdamW(model.parameters(), lr=args.lr)
-    scheduler = WarmupLinearSchedule(optimizer, 100, 80000)
+    scheduler = get_linear_schedule_with_warmup(optimizer, 100, 80000)
 
     global_step = 0
     tr_loss, logging_loss = 0.0, 0.0
@@ -54,13 +50,16 @@ def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
             inputs, labels = torch.tensor(batch['article']), torch.tensor(batch['article'])
             inputs = inputs.to(args.device)
             labels = labels.to(args.device)
+            attention_mask = torch.tensor(batch['attention_mask']).to(args.device)
             model.train()
-            logits = model(inputs)[0]
-            idx = batch['sum_idx'].item()  # index of separator token
+            logits = model(inputs, attention_mask=attention_mask)[0]
+            index = batch['sum_idx']  # index of separator token
             # only consider loss on reference summary just like seq2seq models
-            shift_logits = logits[..., idx:-1, :].contiguous()
-            shift_labels = labels[..., idx + 1:].contiguous()
-            loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+            loss = 0
+            for idx, logs, labs in zip(index, logits, labels):
+                shift_logits = logs[..., idx:-1, :].contiguous()
+                shift_labels = labs[..., idx + 1:].contiguous()
+                loss += loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
             loss = loss / args.gradient_accumulation_steps
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
@@ -139,61 +138,6 @@ def evaluate(args, model, eval_dataset, ignore_index, global_step=None):
     return result
 
 
-'''
-def rl_train(args, model, model_ref, scorer, tokenizer, train_dataset, valid_dataset, ignore_index):
-    writer = SummaryWriter('./logs')
-    train_sampler = RandomSampler(train_dataset)
-    train_dl = DataLoader(train_dataset, sampler=train_sampler, batch_size=args.batch_size,
-                          num_workers=args.num_workers)
-
-    loss_fct = CrossEntropyLoss(ignore_index=ignore_index)  # ignores padding token for loss calculation
-    optimizer = AdamW(model.parameters(), lr=args.lr)
-    scheduler = WarmupLinearSchedule(optimizer, 100, 80000)
-
-    global_step = 0
-    tr_loss, logging_loss = 0.0, 0.0
-    model.zero_grad()
-    train_iterator = tnrange(int(args.num_train_epochs), desc="Epoch")
-    set_seed(args)
-    for _ in train_iterator:
-        epoch_iterator = tqdm(train_dl, desc="Training")
-        for step, batch in enumerate(epoch_iterator):
-            inputs, labels = torch.tensor(batch['article']), torch.tensor(batch['article'])
-            inputs = inputs.to(args.device)
-            labels = labels.to(args.device)
-            model.train()
-            logits = model(inputs)[0]
-            idx = batch['sum_idx'].item()  # index of separator token
-            # only consider loss on reference summary just like seq2seq models
-            shift_logits = logits[..., idx:-1, :].contiguous()
-            shift_labels = labels[..., idx + 1:].contiguous()
-            loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
-            loss = loss / args.gradient_accumulation_steps
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
-            tr_loss += loss.item()
-            if (step + 1) % args.gradient_accumulation_steps == 0:
-                optimizer.step()
-                scheduler.step()  # Update learning rate schedule
-                model.zero_grad()
-                global_step += 1
-                writer.add_scalar('lr', scheduler.get_lr()[0], global_step)
-                writer.add_scalar('loss', (tr_loss - logging_loss) / args.gradient_accumulation_steps, global_step)
-                logging_loss = tr_loss
-                print("loss:", loss.item(), end='\n\n')
-                if (step + 1) / args.gradient_accumulation_steps == 1.0:
-                    print('After 1st update: ', end='\n\n')
-                    generate_sample(valid_dataset, tokenizer, num=2, eval_step=False, device=args.device)
-
-            if (step + 1) % (10 * args.gradient_accumulation_steps) == 0:
-                results = evaluate(args, model, valid_dataset, ignore_index, global_step)
-                for key, value in results.items():
-                    writer.add_scalar('eval_{}'.format(key), value, global_step)
-                print('After', global_step + 1, 'updates: ', end='\n\n')
-                generate_sample(valid_dataset, tokenizer, num=2, eval_step=True, device=args.device)
-'''
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", default=5e-5, type=float, required=False, help="learning rate")
@@ -205,13 +149,9 @@ def main():
     parser.add_argument("--num_workers", default=4, type=int, required=False, help="num of cpus available")
     parser.add_argument("--device", default=-1, required=False, help="torch.device object")
     parser.add_argument("--num_train_epochs", default=5, type=int, required=True, help="no of epochs of training")
-    parser.add_argument("--output_dir", default='./output', type=str, required=False,
+    parser.add_argument("--output_dir", default='./output', type=str, required=True,
                         help="path to save evaluation results")
-    parser.add_argument("--model_dir", default='./weights', type=str, required=False, help="path to save trained model")
-    parser.add_argument("--fp16", default=True, type=bool, required=False,
-                        help="whether to use 16-bit (mixed) precision (through NVIDIA apex) instead of 32-bit")
-    parser.add_argument("--fp16_opt_level", default='O0', type=str, required=False,
-                        help="apex AMP optimization level selected in ['O0', 'O1', 'O2', and 'O3'].")
+    parser.add_argument("--model_dir", default='./weights', type=str, required=True, help="path to save trained model")
     parser.add_argument("--max_grad_norm", default=1.0, type=float, help="max gradient norm.")
     parser.add_argument("--root_dir", default='./CNN/gpt2_1024_data', type=str, help="location of json dataset.")
     parser.add_argument("--ids_file", default='./CNN/ids.json', type=str,
@@ -229,9 +169,9 @@ def main():
     model = GPT2LMHeadModel.from_pretrained('gpt2')
     model.resize_token_embeddings(len(tokenizer))
 
-    # if args.device == -1:
-    #    model = torch.nn.DataParallel(model)
-    args.device = torch.device('cuda:3')
+    if args.device == -1:
+        model = torch.nn.DataParallel(model)
+    args.device = torch.device('cuda:0')
     model.to(args.device)
 
     start = time.time()
@@ -239,18 +179,7 @@ def main():
     print('total time: ', (time.time() - start) / 60, " minutes", end='\n\n')
 
     print('Saving trained model...')
-    model_file = os.path.join(args.model_dir, 'gpt2_summ.pth')
-    config_file = os.path.join(args.model_dir, 'gpt2_summ.json')
-    torch.save(model.state_dict(), model_file)
-    model.config.to_json_file(config_file)
-
-    # scorer = score.BleurtScorer(bleurt_checkpoint)
-    # model = GPT2HeadWithValueModel.from_pretrained('weights/gpt2_summ.pth')
-    # model_ref = GPT2HeadWithValueModel.from_pretrained('weights/gpt2_summ.pth')
-    #
-    # start = time.time()
-    # rl_train(args, model, model_ref, scorer, tokenizer, train_data, valid_data, ignore_idx)
-    # print('total time: ', (time.time() - start) / 60, " minutes", end='\n\n')
+    model.save_pretrained('./weights/partial_cnn_data')
 
 
 if __name__ == '__main__':
