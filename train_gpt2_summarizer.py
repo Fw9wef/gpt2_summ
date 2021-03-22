@@ -52,7 +52,8 @@ def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
             labels = labels.to(args.device)
             attention_mask = torch.tensor(batch['attention_mask']).to(args.device)
             model.train()
-            logits = model(inputs, attention_mask=attention_mask)[0]
+            #logits = model(inputs, attention_mask=attention_mask)[0]
+            logits = model(inputs)[0]
             index = batch['sum_idx']  # index of separator token
             # only consider loss on reference summary just like seq2seq models
             loss = 0
