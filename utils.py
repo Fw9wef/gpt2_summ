@@ -171,5 +171,5 @@ def generate_sample(data, tokenizer, model, num=1, eval_step=False, length=100, 
             print('actual_summary', end='\n\n')
             print(tokenizer.decode(summary), end='\n\n')
         else:
-            print(tokenizer.decode(context), end='\n\n')
+            print(tokenizer.decode(generated_text), end='\n\n')
             print("generated_summary", end='\n\n')
