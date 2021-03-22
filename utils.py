@@ -77,9 +77,11 @@ def sample_seq(model, context, length, device, temperature=1, top_k=0, top_p=0.0
         for _ in tnrange(length):
             inputs = {'input_ids': generated}
             outputs = model(**inputs)  # Note: we could also use 'past' with GPT-2/Transfo-XL/XLNet (cached hidden-states)
-            next_token_logits = outputs[0][0, -1, :] / temperature
-            filtered_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p)
-            next_token = torch.multinomial(F.softmax(filtered_logits, dim=-1), num_samples=1)
+            # next_token_logits = outputs[0][0, -1, :] / temperature
+            # filtered_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p)
+            # next_token = torch.multinomial(F.softmax(filtered_logits, dim=-1), num_samples=1)
+            next_token_logits = outputs[0][0, -1, :]
+            next_token = torch.argmax(next_token_logits, dim=-1).unsqueeze(0)
             generated = torch.cat((generated, next_token.unsqueeze(0)), dim=1)
     return generated
 
