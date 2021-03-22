@@ -179,7 +179,7 @@ def main():
     print('total time: ', (time.time() - start) / 60, " minutes", end='\n\n')
 
     print('Saving trained model...')
-    model.save_pretrained('./weights/partial_cnn_data')
+    model.save_pretrained(args.model_dir)
 
 
 if __name__ == '__main__':
