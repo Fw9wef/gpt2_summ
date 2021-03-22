@@ -173,3 +173,11 @@ def generate_sample(data, tokenizer, model, num=1, eval_step=False, length=100, 
         else:
             print(tokenizer.decode(generated_text), end='\n\n')
             print("generated_summary", end='\n\n')
+
+
+class SaveModelDataParallel(torch.nn.DataParallel):
+    def __getattr__(self, item):
+        if item == 'save_pretrained':
+            return getattr(self.module, item)
+        else:
+            return super().__getattr__(item)

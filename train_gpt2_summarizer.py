@@ -17,7 +17,7 @@ from tqdm import tnrange, tqdm
 
 from dataset import GPT21024Dataset
 from utils import add_special_tokens, beam_search, generate_beam_sample, generate_sample, sample_seq, set_seed, \
-    top_k_top_p_filtering
+    top_k_top_p_filtering, SaveModelDataParallel
 
 
 def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
@@ -170,7 +170,7 @@ def main():
     model.resize_token_embeddings(len(tokenizer))
 
     if args.device == -1:
-        model = torch.nn.DataParallel(model)
+        model = SaveModelDataParallel(model)
     args.device = torch.device('cuda:0')
     model.to(args.device)
 
