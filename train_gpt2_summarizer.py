@@ -52,8 +52,8 @@ def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
             labels = labels.to(args.device)
             attention_mask = torch.tensor(batch['attention_mask']).to(args.device)
             model.train()
-            #logits = model(inputs, attention_mask=attention_mask)[0]
-            logits = model(inputs)[0]
+            logits = model(inputs, attention_mask=attention_mask)[0]
+            #logits = model(inputs)[0]
             index = batch['sum_idx']  # index of separator token
             # only consider loss on reference summary just like seq2seq models
             loss = 0
@@ -110,16 +110,18 @@ def evaluate(args, model, eval_dataset, ignore_index, global_step=None):
 
     for batch in tqdm(eval_dataloader, desc="Evaluating"):
         inputs, labels = torch.tensor(batch['article']).to(args.device), torch.tensor(batch['article']).to(args.device)
+        attention_mask = batch['attention_mask']
 
         with torch.no_grad():
-            logits = model(inputs)[0]
-            idx = batch['sum_idx'].item()  # index of separator token
+            logits = model(inputs, attention_mask=attention_mask)[0]
+            index = batch['sum_idx']  # index of separator token
             # only consider loss on reference summary just like seq2seq models
-            shift_logits = logits[..., idx:-1, :].contiguous()
-            shift_labels = labels[..., idx + 1:].contiguous()
-            lm_loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
-            eval_loss += lm_loss.mean().item()
-        nb_eval_steps += 1
+            for idx, logs, labs in zip(index, logits, labels):
+                shift_logits = logs[..., idx:-1, :].contiguous()
+                shift_labels = labs[..., idx + 1:].contiguous()
+                lm_loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+                eval_loss += lm_loss.item()
+                nb_eval_steps += 1
 
     eval_loss = eval_loss / nb_eval_steps
     perplexity = torch.exp(torch.tensor(eval_loss))
@@ -127,7 +129,6 @@ def evaluate(args, model, eval_dataset, ignore_index, global_step=None):
     result = {
         "perplexity": perplexity
     }
-    print("perplexity:", perplexity.item())
 
     if global_step:
         output_eval_file = os.path.join(eval_output_dir, "eval_results.txt")
