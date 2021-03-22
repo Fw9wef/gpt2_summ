@@ -13,6 +13,7 @@ class GPT21024Dataset(Dataset):
         self.root_dir = root_dir
         self.tokenizer = add_special_tokens()
         self.pad = self.tokenizer.encode(self.tokenizer.pad_token)
+        print(self.pad, type(self.pad))
         self.idxs = os.listdir(root_dir)
         self.mode = mode
         if len == None:
@@ -36,6 +37,7 @@ class GPT21024Dataset(Dataset):
         with open(file_name, 'r') as f:
             data = json.load(f)
         text = self.pad * 1024
+        mask = text
         content = data['article'] + self.tokenizer.encode(self.tokenizer.sep_token) + data['abstract']
         text[:len(content)] = content
         text = torch.tensor(text)
