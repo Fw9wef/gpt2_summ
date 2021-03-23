@@ -13,20 +13,20 @@ def make_dir(path):
 
 #calculates no of words in cnn/dm articles
 def calc_article_sizes(file_name, name):
-	
 	max_len = 0
+	max_len_filename = 'None'
 	article_sizes = {}
 	print("Calculating",name, "Article Sizes......")
-	for i,file in enumerate(os.listdir(file_name)):
-		file = os.path.join(os.getcwd(),file_name,file)
-		with open(file,'r',encoding='utf-8') as f:
+	for i, file in enumerate(os.listdir(file_name)):
+		file = os.path.join(os.getcwd(), file_name, file)
+		with open(file, 'r', encoding='utf-8') as f:
 			txt = f.read().split()
 		txt_len = len(txt)
 		article_sizes[os.path.basename(file)] = txt_len
 		if max_len<txt_len:
 			max_len = txt_len
 			max_len_filename = os.path.basename(file)
-		if i%100==0:
+		if i % 100 == 0:
 			print(i+1, " files read")
 	return max_len, max_len_filename, article_sizes
 
@@ -36,10 +36,13 @@ if __name__ == '__main__':
 	start = time.time()
 	if sys.argv[1].startswith("CNN"):
 		name = "CNN"
-	else:
+	elif sys.argv[1].startswith("DM"):
 		name = "DM"
+	else:
+		name = "CNN-DM"
 
-	make_dir("./"+name)
+
+	make_dir("./" + name)
 	max_len, max_len_filename, article_sizes = calc_article_sizes(sys.argv[1], name)
 	sorted_article_values = np.array(sorted(article_sizes.values()))
 	article_sizes = dict(sorted(article_sizes.items(), key=lambda item:item[1]))
