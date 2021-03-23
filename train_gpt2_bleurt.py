@@ -57,6 +57,12 @@ val_dl = DataLoader(val_dataset, sampler=val_sampler, batch_size=batch_size*2,
 gpt2_model = GPT2HeadWithValueModel.from_pretrained('./weights/')
 gpt2_model_ref = GPT2HeadWithValueModel.from_pretrained('./weights/')
 
+# device_map = {0: [0, 1, 2, 3],
+#               1: [4, 5, 6, 7],
+#               2: [8, 9, 10, 11]}
+# gpt2_model.parallelize(device_map)
+# gpt2_model_ref.parallelize(device_map)
+
 device = torch.device('cuda:0')
 gpt2_model = torch.nn.DataParallel(gpt2_model, device_ids=[0, 1, 2])
 gpt2_model_ref = torch.nn.DataParallel(gpt2_model_ref, device_ids=[0, 1, 2])

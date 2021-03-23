@@ -17,7 +17,7 @@ from tqdm import tnrange, tqdm
 
 from dataset import GPT21024Dataset
 from utils import add_special_tokens, beam_search, generate_beam_sample, generate_sample, sample_seq, set_seed, \
-    top_k_top_p_filtering, SaveModelDataParallel
+    top_k_top_p_filtering, SaveModelDataParallel, watch_metrics
 
 
 def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
@@ -82,6 +82,7 @@ def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
                     writer.add_scalar('eval_{}'.format(key), value, global_step)
                 print('After', global_step + 1, 'updates: ', end='\n\n')
                 generate_sample(valid_dataset, tokenizer, model, num=2, eval_step=True, device=args.device)
+                watch_metrics(valid_dataset, tokenizer, model, num=100, device=args.device)
 
 
 def evaluate(args, model, eval_dataset, ignore_index, global_step=None):
@@ -170,8 +171,8 @@ def main():
     model.resize_token_embeddings(len(tokenizer))
 
     if args.device == -1:
-        model = SaveModelDataParallel(model)
-    args.device = torch.device('cuda:0')
+        model = SaveModelDataParallel(model, device_ids=[1, 2, 3])
+    args.device = torch.device('cuda:1')
     model.to(args.device)
 
     start = time.time()

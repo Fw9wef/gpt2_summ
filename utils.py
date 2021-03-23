@@ -177,9 +177,48 @@ def generate_sample(data, tokenizer, model, num=1, eval_step=False, length=100, 
             print("generated_summary", end='\n\n')
 
 
+def watch_metrics(valid_dataset, tokenizer, model, num, device):
+    for i in range(num):
+        sample = data[i]
+        idx = sample['sum_idx']
+        context = sample['article'][:idx].tolist()
+        summary = sample['article'][idx+1:][:100].tolist()
+        generated_text = sample_seq(model, context, length, device, temperature, top_k, top_p)
+        generated_text = generated_text[0, len(context):].tolist()
+        text = tokenizer.convert_ids_to_tokens(generated_text,skip_special_tokens=True)
+        text = tokenizer.convert_tokens_to_string(text)
+        if eval_step==False:
+            print('new_article', end='\n\n')
+            print(tokenizer.decode(context), end='\n\n')
+            print("generated_summary", end='\n\n')
+            print(text, end='\n\n')
+            print('actual_summary', end='\n\n')
+            print(tokenizer.decode(summary), end='\n\n')
+        else:
+            print(tokenizer.decode(generated_text), end='\n\n')
+            print("generated_summary", end='\n\n')
+
+
 class SaveModelDataParallel(torch.nn.DataParallel):
     def __getattr__(self, item):
         if item == 'save_pretrained':
             return getattr(self.module, item)
         else:
             return super().__getattr__(item)
+
+
+import tensorflow as tf
+from bleurt import score
+from rouge_score import rouge_scorer
+rouge_scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+with tf.device('cpu'):
+    bleurt_scorer = score.BleurtScorer('../bleurt/bleurt/bleurt-base-512')
+
+def calc_metrics(reference, candidate):
+    r_scores = rouge_scorer.score(reference, candidate)
+    b_score = bleurt_scorer.score([reference], [candidate])
+    metrics = {'r1': r_scores['rouge1'][2],
+               'r2': r_scores['rouge2'][2],
+               'rl': r_scores['rougeL'][2],
+               'bleurt': b_score[0]}
+    return metrics
