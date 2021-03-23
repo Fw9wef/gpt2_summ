@@ -171,8 +171,8 @@ def main():
     model.resize_token_embeddings(len(tokenizer))
 
     if args.device == -1:
-        model = SaveModelDataParallel(model, device_ids=[1, 2, 3])
-    args.device = torch.device('cuda:1')
+        model = SaveModelDataParallel(model, device_ids=[0, 1, 2, 3])
+    args.device = torch.device('cuda:0')
     model.to(args.device)
 
     start = time.time()
