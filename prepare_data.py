@@ -78,7 +78,11 @@ def main(file_names, directory):
             lines = f.read().split('\n\n')
         article, abstract = get_art_abs(lines)
         article, abstract = tokenizer.encode(article), tokenizer.encode(abstract)
-        if len(article) > 0 and len(abstract) > 0 and (len(article) + len(abstract)) <= 1023:
+        if len(article) > 0 and len(abstract) > 0: #and (len(article) + len(abstract)) <= 1023:
+            if len(article) > 923:
+                article = article[:923]
+            if len(abstract) > 100:
+                abstract = abstract[:100]
             train_ids.append(i)
             write_json(i, article, abstract)
             file_id_map[i] = os.path.basename(file).replace('.story', '')
@@ -108,13 +112,18 @@ if __name__ == '__main__':
     start = time.time()
     with open(sys.argv[1], 'rb') as f:
         file_sizes = pickle.load(f)
-    file_names = [file for file, size in file_sizes.items() if
-                  size <= 1023]  # only consider files with total no of tokens less than 1024
+    #file_names = [file for file, size in file_sizes.items() if
+    #              size <= 1023]  # only consider files with total no of tokens less than 1024
+    file_names = [file for file, _ in file_sizes.items()]
+    np.random.shuffle(file_names)
     if sys.argv[1].startswith("CNN"):
         directory = "cnn_stories_tokenized"
         os.chdir('/CNN/')
-    else:
+    elif sys.argv[1].startswith("DM"):
         directory = "dm_stories_tokenized"
         os.chdir('./DM/')
+    else :
+        directory = "stories_tokenized"
+        os.chdir('./CNN-DM/')
     main(file_names, directory)
     print("total_time_taken: ", (time.time() - start) / 60, " minutes")
