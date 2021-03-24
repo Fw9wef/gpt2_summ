@@ -163,10 +163,8 @@ def main():
     # arser.add_argument("--rl_mode", action='store_true', help="if specified? trains model with reinforcement learning approach")
     args = parser.parse_args()
 
-    train_data = GPT21024Dataset(args.root_dir, args.ids_file, mode='train',
-                                 length=3000)  # training on only 3000 datasets
-    valid_data = GPT21024Dataset(args.root_dir, args.ids_file, mode='valid',
-                                 length=500)  # validation on only 500 datasets
+    train_data = GPT21024Dataset(args.root_dir, args.ids_file, mode='train')
+    valid_data = GPT21024Dataset(args.root_dir, args.ids_file, mode='valid', length=500)
     tokenizer = add_special_tokens()
     ignore_idx = tokenizer.pad_token_id
 
