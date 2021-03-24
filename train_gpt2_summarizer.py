@@ -74,6 +74,7 @@ def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
                 if (step + 1) / args.gradient_accumulation_steps == 1.0:
                     print('After 1st update: ', end='\n\n')
                     generate_sample(valid_dataset, tokenizer, model, num=2, eval_step=False, device=args.device)
+                    watch_metrics(args, model, tokenizer, train_dataset, num=100, mode='train')
 
             if (step + 1) % (50 * args.gradient_accumulation_steps) == 0:
                 results = evaluate(args, model, valid_dataset, ignore_index, global_step)
@@ -81,7 +82,7 @@ def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
                     writer.add_scalar('eval_{}'.format(key), value, global_step)
                 print('After', global_step + 1, 'updates: ', end='\n\n')
                 generate_sample(valid_dataset, tokenizer, model, num=2, eval_step=True, device=args.device)
-                watch_metrics(valid_dataset, tokenizer, model, num=100, device=args.device)
+                watch_metrics(args, model, tokenizer, valid_dataset, num=100, mode='val')
 
         new_model_dir = os.path.join(args.model_dir, str(epoch_number))
         os.mkdir(new_model_dir)
