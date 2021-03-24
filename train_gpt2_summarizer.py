@@ -154,8 +154,8 @@ def main():
                         help="path to save evaluation results")
     parser.add_argument("--model_dir", default='./weights', type=str, required=True, help="path to save trained model")
     parser.add_argument("--max_grad_norm", default=1.0, type=float, help="max gradient norm.")
-    parser.add_argument("--root_dir", default='./CNN/gpt2_1024_data', type=str, help="location of json dataset.")
-    parser.add_argument("--ids_file", default='./CNN/ids.json', type=str,
+    parser.add_argument("--root_dir", default='./CNN-DM/gpt2_1024_data', type=str, help="location of json dataset.")
+    parser.add_argument("--ids_file", default='./CNN-DM/ids.json', type=str,
                         help="location of train, valid and test file indexes")
     # arser.add_argument("--rl_mode", action='store_true', help="if specified? trains model with reinforcement learning approach")
     args = parser.parse_args()
