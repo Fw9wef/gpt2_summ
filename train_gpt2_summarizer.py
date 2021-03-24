@@ -40,9 +40,8 @@ def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
     global_step = 0
     tr_loss, logging_loss = 0.0, 0.0
     model.zero_grad()
-    train_iterator = tnrange(int(args.num_train_epochs), desc="Epoch")
     set_seed(args)
-    for _ in train_iterator:
+    for epoch_number in range(1, args.num_train_epochs+1):
         epoch_iterator = tqdm(train_dl, desc="Training")
         for step, batch in enumerate(epoch_iterator):
             inputs, labels = torch.tensor(batch['article']), torch.tensor(batch['article'])
@@ -76,13 +75,17 @@ def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
                     print('After 1st update: ', end='\n\n')
                     generate_sample(valid_dataset, tokenizer, model, num=2, eval_step=False, device=args.device)
 
-            if (step + 1) % (10 * args.gradient_accumulation_steps) == 0:
+            if (step + 1) % (100 * args.gradient_accumulation_steps) == 0:
                 results = evaluate(args, model, valid_dataset, ignore_index, global_step)
                 for key, value in results.items():
                     writer.add_scalar('eval_{}'.format(key), value, global_step)
                 print('After', global_step + 1, 'updates: ', end='\n\n')
                 generate_sample(valid_dataset, tokenizer, model, num=2, eval_step=True, device=args.device)
                 watch_metrics(valid_dataset, tokenizer, model, num=100, device=args.device)
+
+        new_model_dir = os.path.join(args.model_dir, str(epoch_number))
+        os.mkdir(new_model_dir)
+        model.save_pretrained(new_model_dir)
 
 
 def evaluate(args, model, eval_dataset, ignore_index, global_step=None):
@@ -180,7 +183,7 @@ def main():
     print('total time: ', (time.time() - start) / 60, " minutes", end='\n\n')
 
     print('Saving trained model...')
-    model.save_pretrained(args.model_dir)
+    #model.save_pretrained(args.model_dir)
 
 
 if __name__ == '__main__':
