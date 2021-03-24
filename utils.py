@@ -213,7 +213,19 @@ class SaveModelDataParallel(torch.nn.DataParallel):
 
 
 import tensorflow as tf
-#tf.compat.v1.flags.DEFINE_integer('batch_size', 1, 'batch_size')
+tf.compat.v1.flags.DEFINE_integer('batch_size', 1, 'batch_size')
+tf.compat.v1.flags.DEFINE_float("lr", 5e-5, "learning rate")
+tf.compat.v1.flags.DEFINE_integer("seed", 42, "seed to replicate results")
+tf.compat.v1.flags.DEFINE_integer("n_gpu", 1, "no of gpu available")
+tf.compat.v1.flags.DEFINE_integer("gradient_accumulation_steps", 32, "gradient_accumulation_steps")
+tf.compat.v1.flags.DEFINE_integer("num_workers", 4, "num of cpus available")
+tf.compat.v1.flags.DEFINE_integer("device", -1, "torch.device object")
+tf.compat.v1.flags.DEFINE_integer("num_train_epochs", 5, "no of epochs of training")
+tf.compat.v1.flags.DEFINE_string("output_dir", './output', "path to save evaluation results")
+tf.compat.v1.flags.DEFINE_string("model_dir", './weights', "path to save trained model")
+tf.compat.v1.flags.DEFINE_float("max_grad_norm", 1.0, "max gradient norm.")
+tf.compat.v1.flags.DEFINE_string("root_dir", './CNN-DM/gpt2_1024_data', "location of json dataset.")
+tf.compat.v1.flags.DEFINE_string("ids_file", './CNN-DM/ids.json', "location of train, valid and test file indexes")
 from bleurt import score
 from rouge_score import rouge_scorer
 rouge_scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
