@@ -71,10 +71,6 @@ def train(all_args, model, tokenizer, train_dataset, valid_dataset, ignore_index
                 writer.add_scalar('loss', (tr_loss - logging_loss) / all_args.gradient_accumulation_steps, global_step)
                 logging_loss = tr_loss
                 print("loss:", loss.item(), end='\n\n')
-                if (step + 1) / all_args.gradient_accumulation_steps == 1.0:
-                    print('After 1st update: ', end='\n\n')
-                    generate_sample(valid_dataset, tokenizer, model, num=2, eval_step=False, device=all_args.device)
-                    watch_metrics(all_args, model, tokenizer, train_dataset, num=100, mode='train')
 
             if (step + 1) % (50 * all_args.gradient_accumulation_steps) == 0:
                 results = evaluate(all_args, model, valid_dataset, ignore_index, global_step)
@@ -82,7 +78,8 @@ def train(all_args, model, tokenizer, train_dataset, valid_dataset, ignore_index
                     writer.add_scalar('eval_{}'.format(key), value, global_step)
                 print('After', global_step + 1, 'updates: ', end='\n\n')
                 generate_sample(valid_dataset, tokenizer, model, num=2, eval_step=True, device=all_args.device)
-                watch_metrics(all_args, model, tokenizer, valid_dataset, num=100, mode='val')
+                watch_metrics(all_args, model, tokenizer, valid_dataset, num=500, mode='val')
+                watch_metrics(all_args, model, tokenizer, train_dataset, num=100, mode='train')
 
         new_model_dir = os.path.join(all_args.model_dir, str(epoch_number))
         os.mkdir(new_model_dir)

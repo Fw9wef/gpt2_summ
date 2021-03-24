@@ -178,6 +178,9 @@ def generate_sample(data, tokenizer, model, num=1, eval_step=False, length=100, 
 
 
 def watch_metrics(all_args, model, tokenizer, data, num=100, mode='train', length=100):
+    if num > len(data):
+        num = len(data)
+
     for i in np.random.choice(len(data), num, replace=False):
         sample = data[i]
         idx = sample['sum_idx']
