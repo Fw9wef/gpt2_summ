@@ -181,6 +181,8 @@ def watch_metrics(all_args, model, tokenizer, data, num=100, mode='train', lengt
     if num > len(data):
         num = len(data)
 
+    bleurt_s = []
+    r1_s, r2_s, rl_s = [], [], []
     for i in np.random.choice(len(data), num, replace=False):
         sample = data[i]
         idx = sample['sum_idx']
@@ -192,19 +194,24 @@ def watch_metrics(all_args, model, tokenizer, data, num=100, mode='train', lengt
         text = tokenizer.convert_tokens_to_string(text)
         metrics_dict = calc_metrics(tokenizer.decode(summary, skip_special_tokens=True), text)
 
-        if mode == 'train':
-            path_to_metrics = os.path.join(all_args.output_dir, 'train_')
-        else:
-            path_to_metrics = os.path.join(all_args.output_dir, 'val_')
+        bleurt_s.append(metrics_dict['bleurt'])
+        r1_s.append(metrics_dict['r1'])
+        r2_s.append(metrics_dict['r2'])
+        rl_s.append(metrics_dict['rl'])
 
-        with open(path_to_metrics+'bleurt.txt', 'a') as f:
-            f.write("%.6f\n" % metrics_dict['bleurt'])
-        with open(path_to_metrics+'r1.txt', 'a') as f:
-            f.write("%.6f\n" % metrics_dict['r1'])
-        with open(path_to_metrics+'r2.txt', 'a') as f:
-            f.write("%.6f\n" % metrics_dict['r2'])
-        with open(path_to_metrics+'rl.txt', 'a') as f:
-            f.write("%.6f\n" % metrics_dict['rl'])
+    if mode == 'train':
+        path_to_metrics = os.path.join(all_args.output_dir, 'train_')
+    else:
+        path_to_metrics = os.path.join(all_args.output_dir, 'val_')
+
+    with open(path_to_metrics+'bleurt.txt', 'a') as f:
+        f.write("%.6f\n" % np.mean(bleurt_s))
+    with open(path_to_metrics+'r1.txt', 'a') as f:
+        f.write("%.6f\n" % np.mean(r1_s))
+    with open(path_to_metrics+'r2.txt', 'a') as f:
+        f.write("%.6f\n" % np.mean(r2_s))
+    with open(path_to_metrics+'rl.txt', 'a') as f:
+        f.write("%.6f\n" % np.mean(rl_s))
 
 
 class SaveModelDataParallel(torch.nn.DataParallel):

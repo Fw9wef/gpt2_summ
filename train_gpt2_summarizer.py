@@ -78,8 +78,8 @@ def train(all_args, model, tokenizer, train_dataset, valid_dataset, ignore_index
                     writer.add_scalar('eval_{}'.format(key), value, global_step)
                 print('After', global_step + 1, 'updates: ', end='\n\n')
                 generate_sample(valid_dataset, tokenizer, model, num=2, eval_step=True, device=all_args.device)
-                watch_metrics(all_args, model, tokenizer, valid_dataset, num=500, mode='val')
-                watch_metrics(all_args, model, tokenizer, train_dataset, num=100, mode='train')
+                watch_metrics(all_args, model, tokenizer, valid_dataset, num=50, mode='val')
+                watch_metrics(all_args, model, tokenizer, train_dataset, num=20, mode='train')
 
         new_model_dir = os.path.join(all_args.model_dir, str(epoch_number))
         os.mkdir(new_model_dir)
