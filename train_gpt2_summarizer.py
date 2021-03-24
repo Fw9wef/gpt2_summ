@@ -72,7 +72,7 @@ def train(all_args, model, tokenizer, train_dataset, valid_dataset, ignore_index
                 logging_loss = tr_loss
                 print("loss:", loss.item(), end='\n\n')
 
-            if (step + 1) % (50 * all_args.gradient_accumulation_steps) == 0:
+            if (step + 1) % (30 * all_args.gradient_accumulation_steps) == 0:
                 results = evaluate(all_args, model, valid_dataset, ignore_index, global_step)
                 for key, value in results.items():
                     writer.add_scalar('eval_{}'.format(key), value, global_step)
