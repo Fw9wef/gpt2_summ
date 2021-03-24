@@ -62,8 +62,7 @@ def train(all_args, model, tokenizer, train_dataset, valid_dataset, ignore_index
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), all_args.max_grad_norm)
             tr_loss += loss.item()
-            #if (step + 1) % args.gradient_accumulation_steps == 0:
-            if True:
+            if (step + 1) % all_args.gradient_accumulation_steps == 0:
                 optimizer.step()
                 scheduler.step()  # Update learning rate schedule
                 model.zero_grad()
@@ -77,15 +76,13 @@ def train(all_args, model, tokenizer, train_dataset, valid_dataset, ignore_index
                     generate_sample(valid_dataset, tokenizer, model, num=2, eval_step=False, device=all_args.device)
                     watch_metrics(all_args, model, tokenizer, train_dataset, num=100, mode='train')
 
-            #if (step + 1) % (50 * args.gradient_accumulation_steps) == 0:
-            if True:
+            if (step + 1) % (50 * all_args.gradient_accumulation_steps) == 0:
                 results = evaluate(all_args, model, valid_dataset, ignore_index, global_step)
                 for key, value in results.items():
                     writer.add_scalar('eval_{}'.format(key), value, global_step)
                 print('After', global_step + 1, 'updates: ', end='\n\n')
                 generate_sample(valid_dataset, tokenizer, model, num=2, eval_step=True, device=all_args.device)
                 watch_metrics(all_args, model, tokenizer, valid_dataset, num=100, mode='val')
-            break
 
         new_model_dir = os.path.join(all_args.model_dir, str(epoch_number))
         os.mkdir(new_model_dir)
@@ -128,7 +125,6 @@ def evaluate(all_args, model, eval_dataset, ignore_index, global_step=None):
                 lm_loss = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
                 eval_loss += lm_loss.item()
                 nb_eval_steps += 1
-        break
 
     eval_loss = eval_loss / nb_eval_steps
     perplexity = torch.exp(torch.tensor(eval_loss))
