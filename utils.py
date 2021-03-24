@@ -177,22 +177,22 @@ def generate_sample(data, tokenizer, model, num=1, eval_step=False, length=100, 
             print("generated_summary", end='\n\n')
 
 
-def watch_metrics(args, model, tokenizer, data, num=100, mode='train', length=100):
+def watch_metrics(all_args, model, tokenizer, data, num=100, mode='train', length=100):
     for i in np.random.choice(len(data), num, replace=False):
         sample = data[i]
         idx = sample['sum_idx']
         context = sample['article'][:idx].tolist()
         summary = sample['article'][idx+1:][:100].tolist()
-        generated_text = sample_seq(model, context, length, device=args.device)
+        generated_text = sample_seq(model, context, length, device=all_args.device)
         generated_text = generated_text[0, len(context):].tolist()
         text = tokenizer.convert_ids_to_tokens(generated_text, skip_special_tokens=True)
         text = tokenizer.convert_tokens_to_string(text)
         metrics_dict = calc_metrics(tokenizer.decode(summary, skip_special_tokens=True), text)
 
         if mode == 'train':
-            path_to_metrics = os.path.join(args.output_dir, 'train_')
+            path_to_metrics = os.path.join(all_args.output_dir, 'train_')
         else:
-            path_to_metrics = os.path.join(args.output_dir, 'val_')
+            path_to_metrics = os.path.join(all_args.output_dir, 'val_')
 
         with open(path_to_metrics+'bleurt.txt', 'a') as f:
             f.write("%.6f\n" % metrics_dict['bleurt'])
@@ -213,7 +213,7 @@ class SaveModelDataParallel(torch.nn.DataParallel):
 
 
 import tensorflow as tf
-tf.compat.v1.flags.DEFINE_integer('batch_size', 1, 'batch_size')
+#tf.compat.v1.flags.DEFINE_integer('batch_size', 1, 'batch_size')
 from bleurt import score
 from rouge_score import rouge_scorer
 rouge_scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
