@@ -221,7 +221,7 @@ with tf.device('cpu'):
 
 def calc_metrics(reference, candidate):
     r_scores = rouge_scorer.score(reference, candidate)
-    b_score = bleurt_scorer.score([reference], [candidate])
+    b_score = bleurt_scorer.score([reference], [candidate], batch_size=1)
     metrics = {'r1': r_scores['rouge1'][2],
                'r2': r_scores['rouge2'][2],
                'rl': r_scores['rougeL'][2],
