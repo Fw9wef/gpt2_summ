@@ -82,7 +82,6 @@ def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
                 print('After', global_step + 1, 'updates: ', end='\n\n')
                 generate_sample(valid_dataset, tokenizer, model, num=2, eval_step=True, device=args.device)
                 watch_metrics(valid_dataset, tokenizer, model, num=100, device=args.device)
-            break
 
         new_model_dir = os.path.join(args.model_dir, str(epoch_number))
         os.mkdir(new_model_dir)
