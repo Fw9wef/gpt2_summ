@@ -75,7 +75,7 @@ def train(args, model, tokenizer, train_dataset, valid_dataset, ignore_index):
                     print('After 1st update: ', end='\n\n')
                     generate_sample(valid_dataset, tokenizer, model, num=2, eval_step=False, device=args.device)
 
-            if (step + 1) % (100 * args.gradient_accumulation_steps) == 0:
+            if (step + 1) % (50 * args.gradient_accumulation_steps) == 0:
                 results = evaluate(args, model, valid_dataset, ignore_index, global_step)
                 for key, value in results.items():
                     writer.add_scalar('eval_{}'.format(key), value, global_step)
