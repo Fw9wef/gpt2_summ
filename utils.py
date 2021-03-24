@@ -163,17 +163,17 @@ def generate_sample(data, tokenizer, model, num=1, eval_step=False, length=100, 
         summary = sample['article'][idx+1:][:100].tolist()
         generated_text = sample_seq(model, context, length, device, temperature, top_k, top_p)
         generated_text = generated_text[0, len(context):].tolist()
-        text = tokenizer.convert_ids_to_tokens(generated_text,skip_special_tokens=True)
+        text = tokenizer.convert_ids_to_tokens(generated_text, skip_special_tokens=True)
         text = tokenizer.convert_tokens_to_string(text)
         if eval_step==False:
             print('new_article', end='\n\n')
-            print(tokenizer.decode(context), end='\n\n')
+            print(tokenizer.decode(context, skip_special_tokens=True), end='\n\n')
             print("generated_summary", end='\n\n')
             print(text, end='\n\n')
             print('actual_summary', end='\n\n')
-            print(tokenizer.decode(summary), end='\n\n')
+            print(tokenizer.decode(summary, skip_special_tokens=True), end='\n\n')
         else:
-            print(tokenizer.decode(generated_text), end='\n\n')
+            print(tokenizer.decode(generated_text, skip_special_tokens=True), end='\n\n')
             print("generated_summary", end='\n\n')
 
 
@@ -213,6 +213,7 @@ class SaveModelDataParallel(torch.nn.DataParallel):
 
 
 import tensorflow as tf
+tf.compat.v1.flags.DEFINE_integer('batch_size', 1, 'batch_size')
 from bleurt import score
 from rouge_score import rouge_scorer
 rouge_scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
