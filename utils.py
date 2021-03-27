@@ -58,7 +58,7 @@ def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')
     return logits
 
 
-def sample_seq(model, context, length, device, temperature=1, top_k=0, top_p=0.0):
+def sample_seq(model, context, length, device, temperature=1, top_k=0, top_p=0.0, bos_token=50256):
     """ Generates a sequence of tokens 
         Args:
             model: gpt/gpt2 model
@@ -73,16 +73,21 @@ def sample_seq(model, context, length, device, temperature=1, top_k=0, top_p=0.0
     context = torch.tensor(context, dtype=torch.long, device=device)
     context = context.unsqueeze(0)
     generated = context
+    flag = False
     with torch.no_grad():  
         for _ in tnrange(length):
+            if flag:
+                break
             inputs = {'input_ids': generated}
             outputs = model(**inputs)  # Note: we could also use 'past' with GPT-2/Transfo-XL/XLNet (cached hidden-states)
             # next_token_logits = outputs[0][0, -1, :] / temperature
             # filtered_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p)
             # next_token = torch.multinomial(F.softmax(filtered_logits, dim=-1), num_samples=1)
             next_token_logits = outputs[0][0, -1, :]
-            next_token = torch.argmax(next_token_logits, dim=-1).unsqueeze(0)
-            generated = torch.cat((generated, next_token.unsqueeze(0)), dim=1)
+            next_token = torch.argmax(next_token_logits, dim=-1)
+            if next_token.item() == bos_token:
+                flag = True
+            generated = torch.cat((generated, next_token.unsqueeze(0).unsqueeze(0)), dim=1)
     return generated
 
 
@@ -161,7 +166,8 @@ def generate_sample(data, tokenizer, model, num=1, eval_step=False, length=100, 
         idx = sample['sum_idx']
         context = sample['article'][:idx].tolist()
         summary = sample['article'][idx+1:][:100].tolist()
-        generated_text = sample_seq(model, context, length, device, temperature, top_k, top_p)
+        generated_text = sample_seq(model, context, length, device, temperature, top_k, top_p,
+                                    bos_token=tokenizer.encode(tokenizer.bos_token))
         generated_text = generated_text[0, len(context):].tolist()
         text = tokenizer.convert_ids_to_tokens(generated_text, skip_special_tokens=True)
         text = tokenizer.convert_tokens_to_string(text)
@@ -188,7 +194,8 @@ def watch_metrics(all_args, model, tokenizer, data, num=100, mode='train', lengt
         idx = sample['sum_idx']
         context = sample['article'][:idx].tolist()
         summary = sample['article'][idx+1:][:100].tolist()
-        generated_text = sample_seq(model, context, length, device=all_args.device)
+        generated_text = sample_seq(model, context, length, device=all_args.device,
+                                    bos_token=tokenizer.encode(tokenizer.bos_token))
         generated_text = generated_text[0, len(context):].tolist()
         text = tokenizer.convert_ids_to_tokens(generated_text, skip_special_tokens=True)
         text = tokenizer.convert_tokens_to_string(text)

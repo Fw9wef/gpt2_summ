@@ -40,7 +40,12 @@ class GPT21024Dataset(Dataset):
         with open(file_name, 'r') as f:
             data = json.load(f)
         text = self.pad * 1024
-        content = data['article'] + self.tokenizer.encode(self.tokenizer.sep_token) + data['abstract']
+        if len(data['abstract']) < 100 or len(data['abstract']) + len(data['article']) < 1023:
+            abstract = data['abstract'] + self.tokenizer.encode(self.tokenizer.bos_token)
+        else:
+            abstract = data['abstract'][:-1] + self.tokenizer.encode(self.tokenizer.bos_token)
+
+        content = data['article'] + self.tokenizer.encode(self.tokenizer.sep_token) + abstract
         text[:len(content)] = content
         text = torch.tensor(text)
         mask = torch.where(text == self.pad[0], 0, 1)
