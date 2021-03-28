@@ -208,8 +208,10 @@ def watch_metrics(all_args, model, tokenizer, data, num=100, mode='train', lengt
 
     if mode == 'train':
         path_to_metrics = os.path.join(all_args.output_dir, 'train_')
-    else:
+    elif mode == 'val':
         path_to_metrics = os.path.join(all_args.output_dir, 'val_')
+    else:
+        path_to_metrics = os.path.join(all_args.output_dir, 'test_')
 
     with open(path_to_metrics+'bleurt.txt', 'a') as f:
         f.write("%.6f\n" % np.mean(bleurt_s))
