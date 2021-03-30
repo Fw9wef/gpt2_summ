@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from transformers import GPT2Tokenizer
-from tqdm import tnrange
+from tqdm import tqdm
 
 
 def add_special_tokens():
