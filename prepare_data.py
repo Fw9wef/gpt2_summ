@@ -1,7 +1,6 @@
 import json
 import os
 import pickle
-import random
 import sys
 import time
 
@@ -63,10 +62,10 @@ def write_json(i, article, abstract):
 
 def main(file_names, directory):
     """ Reads txt files, extract articles and summaries, tokenize them and save as json files
-		Args:
-			file_names: list, all the articles with total no of tokens less than 1024
-			directory: string, directory where files in file_names is stored
-	"""
+        Args:
+            file_names: list, all the articles with total no of tokens less than 1024
+            directory: string, directory where files in file_names is stored
+    """
     tokenizer = add_special_tokens()
     print("Execution Started...")
     train_ids = []

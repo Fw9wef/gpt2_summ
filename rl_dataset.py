@@ -1,9 +1,7 @@
 import os
 import json
-import numpy as np
 import torch
 from torch.utils.data import Dataset
-from transformers import GPT2Tokenizer
 
 from utils import add_special_tokens
 
