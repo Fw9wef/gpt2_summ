@@ -75,7 +75,7 @@ def sample_seq(model, context, length, device, temperature=1, top_k=0, top_p=0.0
     generated = context
     flag = False
     with torch.no_grad():  
-        for _ in tnrange(length):
+        for _ in range(length):
             if flag:
                 break
             inputs = {'input_ids': generated}
@@ -111,7 +111,7 @@ def beam_search(model, context, length, beam_size, device, temperature=1):
         scores, indices = torch.topk(next_token_probs, beam_size)
         indices = indices.tolist()
         sequences = [[c] for c in indices]
-        for _ in tnrange(length-1):
+        for _ in range(length-1):
             logits = torch.zeros(beam_size*len(next_token_logits))
             for j in range(len(sequences)):
                 new_generated = torch.cat((context,torch.tensor([sequences[j]], dtype=torch.long, device=device)),dim=1)
