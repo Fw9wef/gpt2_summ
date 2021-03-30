@@ -138,7 +138,7 @@ def generate_beam_sample(data, tokenizer, model, num=1, length=100, beam_size=3,
     for i in range(num):
         sample = data[i]
         idx = sample['sum_idx']
-        context = sample['article'][:idx].tolist()
+        context = sample['article'][:idx+1].tolist()
         summary = sample['article'][idx+1:][:100].tolist()
         scores, sequences = beam_search(model, context, length, beam_size, device)
         print('new_article', end='\n\n')
@@ -164,7 +164,7 @@ def generate_sample(data, tokenizer, model, num=1, eval_step=False, length=100, 
     for i in range(num):
         sample = data[i]
         idx = sample['sum_idx']
-        context = sample['article'][:idx].tolist()
+        context = sample['article'][:idx+1].tolist()
         summary = sample['article'][idx+1:][:100].tolist()
         generated_text = sample_seq(model, context, length, device, temperature, top_k, top_p,
                                     bos_token=tokenizer.encode(tokenizer.bos_token))
@@ -192,7 +192,7 @@ def watch_metrics(all_args, model, tokenizer, data, num=100, mode='train', lengt
     for i in np.random.choice(len(data), num, replace=False):
         sample = data[i]
         idx = sample['sum_idx']
-        context = sample['article'][:idx].tolist()
+        context = sample['article'][:idx+1].tolist()
         summary = sample['article'][idx+1:][:100].tolist()
         generated_text = sample_seq(model, context, length, device=all_args.device,
                                     bos_token=tokenizer.encode(tokenizer.bos_token))
