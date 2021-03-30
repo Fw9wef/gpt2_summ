@@ -1,3 +1,7 @@
+'''
+Этот файл предоставляет возможность тестирования обученной модели и финального потсчета метрик
+'''
+
 import argparse
 from transformers import GPT2LMHeadModel
 import torch

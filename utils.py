@@ -1,3 +1,7 @@
+'''
+В этом файле определены различные вспомогательные функции
+'''
+
 import os
 import random
 import numpy as np

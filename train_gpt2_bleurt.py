@@ -3,10 +3,8 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader, RandomSampler
 from tqdm import tqdm
-
 from rl_dataset import GPT21024Dataset
 from utils import add_special_tokens, SaveModelDataParallel
-
 import tensorflow as tf
 from trl.gpt2 import GPT2HeadWithValueModel, respond_to_batch
 from trl.ppo import PPOTrainer
