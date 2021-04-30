@@ -124,5 +124,9 @@ if __name__ == '__main__':
     else :
         directory = "stories_tokenized"
         os.chdir('./CNN-DM/')
+
+    if not os.path.isdir('./gpt2_1024_data'):
+        os.mkdir('./gpt2_1024_data')
+
     main(file_names, directory)
     print("total_time_taken: ", (time.time() - start) / 60, " minutes")

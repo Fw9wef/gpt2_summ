@@ -13,7 +13,13 @@ from utils import add_special_tokens
 
 class GPT21024Dataset(Dataset):
     def __init__(self, root_dir, ids_file, mode='train', length=None):
-        self.root_dir = root_dir
+        '''
+        root_dir:
+        ids_file:
+        mode:
+        length:
+        '''
+        self.root_dir = root_dir  # папка с данными в формате json файлов (gpt2_1024_data)
         self.tokenizer = add_special_tokens()
         self.pad = self.tokenizer.encode(self.tokenizer.pad_token)
         self.files = np.sort([x for x in os.listdir(root_dir) if x.endswith('.json')])
