@@ -60,9 +60,9 @@ def train(all_args, model, tokenizer, train_dataset, valid_dataset, ignore_index
                 scheduler.step()
                 model.zero_grad()
                 global_step += 1
-                print("loss:", loss.item(), end='\n\n')
+                print("updates passed: %d\tloss: %f" % (global_step, loss.item()), end='\n\n')
 
-            if (step + 1) % (30 * all_args.gradient_accumulation_steps) == 0:
+            if (step + 1) % (500 * all_args.gradient_accumulation_steps) == 0:
                 # раз в 30 шагов оптимизатора выводим сэмплы резюме и подсчитываем метрики на валидации
                 print('After', global_step + 1, 'updates: ', end='\n\n')
                 evaluate(all_args, model, valid_dataset, ignore_index)
@@ -119,10 +119,10 @@ def main():
     parser.add_argument("--lr", default=5e-5, type=float, required=False, help="learning rate")
     parser.add_argument("--seed", default=42, type=int, required=False, help="seed to replicate results")
     parser.add_argument("--n_gpu", default=1, type=int, required=False, help="no of gpu available")
-    parser.add_argument("--gradient_accumulation_steps", default=32, type=int, required=True,
+    parser.add_argument("--gradient_accumulation_steps", default=4, type=int, required=True,
                         help="gradient_accumulation_steps")
     parser.add_argument("--batch_size", default=1, type=int, required=True, help="batch_size")
-    parser.add_argument("--num_workers", default=4, type=int, required=False, help="num of cpus available")
+    parser.add_argument("--num_workers", default=2, type=int, required=False, help="num of cpus available")
     parser.add_argument("--device", default=0, required=False, help="torch.device object")
     parser.add_argument("--num_train_epochs", default=5, type=int, required=True, help="no of epochs of training")
     parser.add_argument("--output_dir", default='./output', type=str, required=True,
