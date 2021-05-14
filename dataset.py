@@ -58,5 +58,5 @@ class GPT21024Dataset(Dataset):
         text[:len(content)] = content
         text = torch.Tensor(text)
         mask = torch.where(text == self.pad[0], torch.zeros_like(text), torch.ones_like(text))
-        sample = {'article': text, 'sum_idx': len(data['article']), 'attention_mask': mask}
+        sample = {'article': text.long(), 'sum_idx': len(data['article']), 'attention_mask': mask.long()}
         return sample
