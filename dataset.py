@@ -56,8 +56,7 @@ class GPT21024Dataset(Dataset):
 
         content = data['article'] + self.tokenizer.encode(self.tokenizer.sep_token) + abstract
         text[:len(content)] = content
-        text = np.asarray(text)
-        mask = torch.where(text == self.pad[0], 0, 1)
         text = torch.Tensor(text)
+        mask = torch.where(text == self.pad[0], torch.zeros_like(text), torch.ones_like(text))
         sample = {'article': text, 'sum_idx': len(data['article']), 'attention_mask': mask}
         return sample
