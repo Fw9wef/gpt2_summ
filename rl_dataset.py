@@ -4,6 +4,7 @@
 
 import os
 import json
+import numpy as np
 import torch
 from torch.utils.data import Dataset
 
@@ -12,11 +13,27 @@ from utils import add_special_tokens
 
 class GPT21024Dataset(Dataset):
     def __init__(self, root_dir, ids_file, mode='train', length=None):
-        self.root_dir = root_dir
+        '''
+        root_dir:
+        ids_file:
+        mode:
+        length:
+        '''
+        self.root_dir = root_dir  # папка с данными в формате json файлов (gpt2_1024_data)
         self.tokenizer = add_special_tokens()
-        self.idxs = os.listdir(root_dir)
+        self.pad = self.tokenizer.encode(self.tokenizer.pad_token)
+        self.files = np.sort([x for x in os.listdir(root_dir) if x.endswith('.json')])
         self.mode = mode
-        if len == None:
+        with open(ids_file, 'r') as f:
+            self.data = json.load(f)
+        if mode == 'train':
+            self.idxs = self.data['train_ids']
+        elif mode == 'valid':
+            self.idxs = self.data['valid_ids']
+        else:
+            self.idxs = self.data['test_ids']
+
+        if length == None:
             self.len = len(self.idxs)
         else:
             self.len = length
@@ -27,27 +44,19 @@ class GPT21024Dataset(Dataset):
 
 
     def __getitem__(self, idx):
-
-        if self.mode == 'valid':
-            idx = self.idxs[-idx]
-        elif self.mode == 'test':
-            idx = self.idxs[-idx - self.len]  # assuming valid and test set of same sizes
-        else:
-            idx = self.idxs[idx]
-        # file_name = os.path.join(self.root_dir,str(idx)+".json")
+        idx = self.files[self.idxs[idx]]
         file_name = os.path.join(self.root_dir, str(idx))
         with open(file_name, 'r') as f:
             data = json.load(f)
+        article = self.pad * 924
+        if len(data['abstract']) < 100 or len(data['abstract']) + len(data['article']) < 1023:
+            abstract = data['abstract'] + self.tokenizer.encode(self.tokenizer.bos_token)
+        else:
+            abstract = data['abstract'][:-1] + self.tokenizer.encode(self.tokenizer.bos_token)
 
-        article = self.tokenizer.encode(self.tokenizer.pad_token) * 768
-        content = data['article'][:767] + self.tokenizer.encode(self.tokenizer.sep_token)
-        article[len(article) - len(content):] = content
-        article = torch.tensor(article)
-
-        summary = self.tokenizer.encode(self.tokenizer.pad_token) * 256
-        content = data['abstract'][:256]
-        summary[:len(content)] = content
-        summary = torch.tensor(summary)
-
-        sample = {'article': article, 'summary': summary}
+        content = data['article'] + self.tokenizer.encode(self.tokenizer.sep_token)
+        article[:len(content)] = content
+        article = torch.Tensor(article)
+        mask = torch.where(article == self.pad[0], torch.zeros_like(article), torch.ones_like(article))
+        sample = {'article': article.long(), 'abstract': abstract.long(), 'article_mask': mask.long()}
         return sample
