@@ -53,6 +53,7 @@ class GPT21024Dataset(Dataset):
             abstract = data['abstract'] + self.tokenizer.encode(self.tokenizer.bos_token)
         else:
             abstract = data['abstract'][:-1] + self.tokenizer.encode(self.tokenizer.bos_token)
+        abstract = torch.Tensor(abstract)
 
         content = data['article'] + self.tokenizer.encode(self.tokenizer.sep_token)
         article[:len(content)] = content
