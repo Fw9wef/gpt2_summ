@@ -49,14 +49,16 @@ class GPT21024Dataset(Dataset):
         with open(file_name, 'r') as f:
             data = json.load(f)
         article = self.pad * 924
+        abstract = self.pad * 100
         if len(data['abstract']) < 100 or len(data['abstract']) + len(data['article']) < 1023:
-            abstract = data['abstract'] + self.tokenizer.encode(self.tokenizer.bos_token)
+            abstract_content = data['abstract'] + self.tokenizer.encode(self.tokenizer.bos_token)
         else:
-            abstract = data['abstract'][:-1] + self.tokenizer.encode(self.tokenizer.bos_token)
+            abstract_content = data['abstract'][:-1] + self.tokenizer.encode(self.tokenizer.bos_token)
+        abstract[:len(abstract_content)] = abstract_content
         abstract = torch.Tensor(abstract)
 
-        content = data['article'] + self.tokenizer.encode(self.tokenizer.sep_token)
-        article[:len(content)] = content
+        article_content = data['article'] + self.tokenizer.encode(self.tokenizer.sep_token)
+        article[:len(article_content)] = article_content
         article = torch.Tensor(article)
         mask = torch.where(article == self.pad[0], torch.zeros_like(article), torch.ones_like(article))
         sample = {'article': article.long(), 'abstract': abstract.long(), 'article_mask': mask.long()}
