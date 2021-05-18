@@ -50,7 +50,7 @@ class GPT21024Dataset(Dataset):
             data = json.load(f)
         article = self.pad * 924
         abstract = self.pad * 100
-        if len(data['abstract']) < 100 or len(data['abstract']) + len(data['article']) < 1023:
+        if len(data['abstract']) < 100:
             abstract_content = data['abstract'] + self.tokenizer.encode(self.tokenizer.bos_token)
         else:
             abstract_content = data['abstract'][:-1] + self.tokenizer.encode(self.tokenizer.bos_token)
