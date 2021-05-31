@@ -78,7 +78,8 @@ def watch_metrics(all_args, model, tokenizer, data, num=100, mode='train', lengt
 
     bleurt_s = []
     r1_s, r2_s, rl_s = [], [], []
-    for i in np.random.choice(len(data), num, replace=False):
+    random_seq = np.random.choice(len(data), num, replace=False)
+    for i in random_seq:
         sample = data[i]
         idx = sample['sum_idx']
         context = sample['article'][:idx+1].tolist()
@@ -93,6 +94,9 @@ def watch_metrics(all_args, model, tokenizer, data, num=100, mode='train', lengt
         r1_s.append(metrics_dict['r1'])
         r2_s.append(metrics_dict['r2'])
         rl_s.append(metrics_dict['rl'])
+
+        with open("qwe_test.txt", 'w') as f:
+            f.write("passed: %d\nr1: %.6f\nr2: %.6f\nrl: %.6f\n" % (len(r1_s), np.mean(r1_s), np.mean(r2_s), np.mean(rl_s)))
 
     if mode == 'train':
         path_to_metrics = os.path.join(all_args.output_dir, 'train_')

@@ -28,7 +28,7 @@ def main():
                         help="location of train, valid and test file indexes")
 
     all_args = parser.parse_args()
-    dataset = GPT21024Dataset(all_args.root_dir, all_args.ids_file, mode='test', length=500)
+    dataset = GPT21024Dataset(all_args.root_dir, all_args.ids_file, mode='test')
     tokenizer = add_special_tokens()
     model = GPT2LMHeadModel.from_pretrained(all_args.model_dir)
     all_args.device = torch.device('cuda:'+str(all_args.device))
