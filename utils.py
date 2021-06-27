@@ -18,6 +18,9 @@ def add_special_tokens():
 
 
 def set_seed(all_args):
+    '''
+    Фиксируем сиды
+    '''
     random.seed(all_args.seed)
     np.random.seed(all_args.seed)
     torch.manual_seed(all_args.seed)
@@ -26,12 +29,27 @@ def set_seed(all_args):
 
 
 def make_dirs(all_args):
+    '''
+    Создает все необходимые папки для вывода метрик в процессе обучения и сохранения моделей
+    '''
     for path in [all_args.output_dir, all_args.model_dir]:
         if not os.path.isdir(path):
             os.mkdir(path)
 
 
 def sample_seq(model, context, length, device, bos_token):
+    '''
+    Генерирует резюме для заданного текста
+    Args:
+        model: модель gpt2
+        context: array of int: последовательность токенов резюмируемого текста. Последним токеном в этой последовательности должен быть токен сепарации
+        length: int: максимальная длина резюме
+        device: torch.device: девайс, на котором находится модель
+        bos_token: int: токен окончания генерации
+
+    Return:
+        torch.Tensor последовательность токенов исходного текста и резюме, разделенных токеном сепарации
+    '''
     context = torch.tensor(context, dtype=torch.long, device=device)
     context = context.unsqueeze(0)
     generated = context
@@ -51,6 +69,17 @@ def sample_seq(model, context, length, device, bos_token):
 
 
 def generate_sample(data, tokenizer, model, num=1, eval_step=False, length=100, device=torch.device('cuda')):
+    '''
+    Эта функция генерирует num резюме с помощью функции sample_seq и выводит сгенерированные резюме в консоль.
+    Args:
+        data: GPT21024Dataset: объект класса датасета
+        tokenizer: transformers GPT2Tokenizer: объект токенизатора для преобразования токенов в слова
+        model transformers GPT2LMHeadModel: модель для генерации резюме
+        num: int: количество генерируемых резюме
+        eval_step: bool: Если true, то в консоль будут выведены только резюме. Если false, то еще и сами тексты и гт резюме
+        length: int: максимальная длина генерируемого резюме
+        device: torch.device: девайс, на котором расположена модель
+    '''
     for i in range(num):
         sample = data[i]
         idx = sample['sum_idx']
@@ -73,6 +102,17 @@ def generate_sample(data, tokenizer, model, num=1, eval_step=False, length=100, 
 
 
 def watch_metrics(all_args, model, tokenizer, data, num=100, mode='train', length=100):
+    '''
+    Эта функция выполняет генерацию num резюме, оценивает их качество и записывает метрики в txt файлы.
+    Args:
+        all_args: argparse.ArgumentParser: объект, содержащий параметры запуска.
+        model: transformers GPT2LMHeadModel: модель для генерации резюме
+        tokenizer: transformers GPT2Tokenizer: объект токенизатора для преобразования токенов в слова
+        data: GPT21024Dataset: объект класса датасета
+        num: int: количество генерируемых резюме
+        mode: str: 'train', 'val' или 'test'. В зависимости от названия метрики будут записаны в различные файлы.
+        length: int: максимальная длина резюме.
+    '''
     if num > len(data):
         num = len(data)
 
@@ -116,6 +156,10 @@ def watch_metrics(all_args, model, tokenizer, data, num=100, mode='train', lengt
 
 
 class SaveModelDataParallel(torch.nn.DataParallel):
+    '''
+    Стандартный класс DataParallel блокирует доступ к методу save_pretrained класса GPT2LMHeadModel.
+    Этот класс исправляет это и позволяет распараллеливать вычисления на несколько карт
+    '''
     def __getattr__(self, item):
         if item == 'save_pretrained':
             return getattr(self.module, item)
@@ -124,6 +168,7 @@ class SaveModelDataParallel(torch.nn.DataParallel):
 
 
 import tensorflow as tf
+# нижестоящее объявление флагов нужно чтобы tf не ругался при создании скорера bleurt
 tf.compat.v1.flags.DEFINE_integer('batch_size', 1, 'batch_size')
 tf.compat.v1.flags.DEFINE_float("lr", 5e-5, "learning rate")
 tf.compat.v1.flags.DEFINE_integer("seed", 42, "seed to replicate results")
@@ -137,6 +182,8 @@ tf.compat.v1.flags.DEFINE_string("model_dir", './weights', "path to save trained
 tf.compat.v1.flags.DEFINE_float("max_grad_norm", 1.0, "max gradient norm.")
 tf.compat.v1.flags.DEFINE_string("root_dir", './CNN-DM/gpt2_1024_data', "location of json dataset.")
 tf.compat.v1.flags.DEFINE_string("ids_file", './CNN-DM/ids.json', "location of train, valid and test file indexes")
+
+# создаем скореры
 from bleurt import score
 from rouge_score import rouge_scorer
 rouge_scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
@@ -145,6 +192,14 @@ with tf.device('cpu'):
 
 
 def calc_metrics(reference, candidate):
+    '''
+    Эта функция вычисляет метрики качества для пары гт и предсказанного резюме
+    Args:
+        reference: python str: строка гт резюме
+        candidate: python str: строка сгенерированного резюме
+    Return:
+        python dict: словарь c метриками. f-score для rouge метрик и bleurt-score
+    '''
     r_scores = rouge_scorer.score(reference, candidate)
     b_score = bleurt_scorer.score([reference], [candidate], batch_size=1)
     metrics = {'r1': r_scores['rouge1'][2],

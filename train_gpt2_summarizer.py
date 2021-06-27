@@ -24,7 +24,7 @@ def train(all_args, model, tokenizer, train_dataset, valid_dataset, ignore_index
             ignore_index: token not considered in loss calculation
     """
 
-    # создаем даталоадер из трейнового датасета
+    # создаем даталоадер
     train_sampler = RandomSampler(train_dataset)
     train_dl = DataLoader(train_dataset, sampler=train_sampler, batch_size=all_args.batch_size,
                           num_workers=all_args.num_workers)
@@ -63,11 +63,14 @@ def train(all_args, model, tokenizer, train_dataset, valid_dataset, ignore_index
                 print("updates passed: %d\tloss: %f" % (global_step, loss.item()), end='\n\n')
 
             if (step + 1) % (500 * all_args.gradient_accumulation_steps) == 0:
-                # раз в 30 шагов оптимизатора выводим сэмплы резюме и подсчитываем метрики на валидации
+                # раз в 500 шагов оптимизатора выводим сэмплы резюме и подсчитываем метрики на валидации и сохраняем модель
                 print('After', global_step + 1, 'updates: ', end='\n\n')
                 evaluate(all_args, model, valid_dataset, ignore_index)
                 generate_sample(valid_dataset, tokenizer, model, num=2, eval_step=True, device=all_args.device)
                 watch_metrics(all_args, model, tokenizer, valid_dataset, num=50, mode='val')
+                new_model_dir = os.path.join(all_args.model_dir, "epoch_" + str(epoch_number) + "_step_" + str(step + 1))
+                os.mkdir(new_model_dir)
+                model.save_pretrained(new_model_dir)
 
         # сохраняем обученную модель каждую эпоху
         new_model_dir = os.path.join(all_args.model_dir, str(epoch_number))
@@ -118,7 +121,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", default=5e-5, type=float, required=False, help="learning rate")
     parser.add_argument("--seed", default=42, type=int, required=False, help="seed to replicate results")
-    parser.add_argument("--n_gpu", default=1, type=int, required=False, help="no of gpu available")
+    parser.add_argument("--n_gpu", default=1, type=int, required=False, help="how many gpus are available")
     parser.add_argument("--gradient_accumulation_steps", default=4, type=int, required=True,
                         help="gradient_accumulation_steps")
     parser.add_argument("--batch_size", default=1, type=int, required=True, help="batch_size")
@@ -129,12 +132,12 @@ def main():
                         help="path to save evaluation results")
     parser.add_argument("--model_dir", default='./weights', type=str, required=True, help="path to save trained model")
     parser.add_argument("--max_grad_norm", default=1.0, type=float, help="max gradient norm.")
-    parser.add_argument("--root_dir", default='./CNN-DM/gpt2_1024_data', type=str, help="location of json dataset.")
+    parser.add_argument("--root_dir", default='./CNN-DM/stories_tokenized', type=str, help="location of json dataset.")
     parser.add_argument("--ids_file", default='./CNN-DM/ids.json', type=str,
                         help="location of train, valid and test file indexes")
     all_args = parser.parse_args()
 
-    # загружаем трейновый и валидационный датасеты, текенизатор
+    # загружаем трейновый и валидационный датасеты, токенизатор
     train_data = GPT21024Dataset(all_args.root_dir, all_args.ids_file, mode='train')
     valid_data = GPT21024Dataset(all_args.root_dir, all_args.ids_file, mode='valid', length=500)
     tokenizer = add_special_tokens()

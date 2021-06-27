@@ -14,12 +14,14 @@ from utils import add_special_tokens
 class GPT21024Dataset(Dataset):
     def __init__(self, root_dir, ids_file, mode='train', length=None):
         '''
-        root_dir:
-        ids_file:
-        mode:
-        length:
+        Класс датасета для данных, обработанных с помощью скриптов max_article_sizes.py и prepare_data.py
+        Args:
+            root_dir: python str: папка с данными в формате json файлов. Например, CNN-DM/stories_tokenized (смотри readme)
+            ids_file: python str: путь с json-файлу с разбиением датасета на трейн, валидацию и тест (смотри readme)
+            mode: python str: одно из train, valid или test. В зависимости от значения загрузит различные данные
+            length: python int или None: максимальное количество данных. Позволяет уменьшить количество данных для ускорения эпох, валидации и тестирования
         '''
-        self.root_dir = root_dir  # папка с данными в формате json файлов (gpt2_1024_data)
+        self.root_dir = root_dir
         self.tokenizer = add_special_tokens()
         self.pad = self.tokenizer.encode(self.tokenizer.pad_token)
         self.files = np.sort([x for x in os.listdir(root_dir) if x.endswith('.json')])
@@ -44,6 +46,12 @@ class GPT21024Dataset(Dataset):
 
 
     def __getitem__(self, idx):
+        '''
+        Возвращает словарь с:
+        'article' : тензором последовательности токенов исходного текста и резюме, разделенных
+        'sum_idx' : индексом токена-разделителя
+        'attention_mask' : тензором с маской пэддингов
+        '''
         idx = self.files[self.idxs[idx]]
         file_name = os.path.join(self.root_dir, str(idx))
         with open(file_name, 'r') as f:

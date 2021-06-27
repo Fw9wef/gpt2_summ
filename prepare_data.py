@@ -11,8 +11,7 @@ from utils import add_special_tokens
 dm_single_close_quote = '\u2019'  # unicode
 dm_double_close_quote = '\u201d'
 # acceptable ways to end a sentence
-END_TOKENS = ['.', '!', '?', '...', "'", "`", '"',
-              dm_single_close_quote, dm_double_close_quote, ")"]
+END_TOKENS = ['.', '!', '?', '...', "'", "`", '"', dm_single_close_quote, dm_double_close_quote, ")"]
 
 
 def fix_missing_period(line):
@@ -121,7 +120,7 @@ if __name__ == '__main__':
     elif sys.argv[1].startswith("DM"):
         directory = "dm_stories_tokenized"
         os.chdir('./DM/')
-    else :
+    else:
         directory = "stories_tokenized"
         os.chdir('./CNN-DM/')
 
